@@ -7,16 +7,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.location.GnssStatus
+import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.Priority
 import com.gpsjammingdetector.data.preferences.UserPreferences
 import com.gpsjammingdetector.data.repository.GpsRepository
 import com.gpsjammingdetector.domain.model.GpsReading
@@ -36,7 +33,6 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class GpsTrackingService : Service() {
 
-    @Inject lateinit var fusedLocationClient: FusedLocationProviderClient
     @Inject lateinit var locationManager: LocationManager
     @Inject lateinit var repository: GpsRepository
     @Inject lateinit var userPreferences: UserPreferences
@@ -47,57 +43,67 @@ class GpsTrackingService : Service() {
     private var anomalyCount = 0
     private var satelliteCount = 0
 
-    private val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(result: LocationResult) {
-            result.lastLocation?.let { location ->
-                val reading = GpsReading(
-                    latitude = location.latitude,
-                    longitude = location.longitude,
-                    altitude = location.altitude,
-                    accuracy = location.accuracy,
-                    speed = location.speed,
-                    bearing = location.bearing,
-                    timestamp = location.time,
-                    isMock = location.isMock,
-                    provider = location.provider ?: "unknown",
-                    satelliteCount = satelliteCount,
-                    sessionId = sessionId
-                )
+    private val gpsLocationListener = object : LocationListener {
+        override fun onLocationChanged(location: Location) {
+            val reading = GpsReading(
+                latitude = location.latitude,
+                longitude = location.longitude,
+                altitude = location.altitude,
+                accuracy = location.accuracy,
+                speed = location.speed,
+                bearing = location.bearing,
+                timestamp = location.time,
+                isMock = location.isMock,
+                provider = location.provider ?: LocationManager.GPS_PROVIDER,
+                satelliteCount = satelliteCount,
+                sessionId = sessionId
+            )
 
-                serviceScope.launch {
-                    try {
-                        val anomalies = repository.processNewReading(reading)
-                        readingCount++
-                        anomalyCount += anomalies.size
-                        _currentSatelliteCount.value = satelliteCount
-                        _currentAccuracy.value = location.accuracy
-                        _lastLatitude.value = location.latitude
-                        _lastLongitude.value = location.longitude
+            serviceScope.launch {
+                try {
+                    val anomalies = repository.processNewReading(reading)
+                    readingCount++
+                    anomalyCount += anomalies.size
+                    _currentSatelliteCount.value = satelliteCount
+                    _currentAccuracy.value = location.accuracy
+                    _lastLatitude.value = location.latitude
+                    _lastLongitude.value = location.longitude
 
-                        if (anomalies.isNotEmpty()) {
-                            userPreferences.audioAlertEnabled.collect { enabled ->
-                                if (enabled) {
-                                    userPreferences.alertSound.collect { sound ->
-                                        AlertSoundPlayer.play(this@GpsTrackingService, sound)
-                                        return@collect
-                                    }
+                    if (anomalies.isNotEmpty()) {
+                        userPreferences.audioAlertEnabled.collect { enabled ->
+                            if (enabled) {
+                                userPreferences.alertSound.collect { sound ->
+                                    AlertSoundPlayer.play(this@GpsTrackingService, sound)
+                                    return@collect
                                 }
-                                return@collect
                             }
+                            return@collect
                         }
-
-                        updateNotification()
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error processing reading", e)
                     }
+
+                    updateNotification()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error processing reading", e)
                 }
             }
+        }
+
+        override fun onProviderEnabled(provider: String) {
+            Log.i(TAG, "GPS provider enabled")
+        }
+
+        override fun onProviderDisabled(provider: String) {
+            Log.w(TAG, "GPS provider disabled")
         }
     }
 
     private val gnssStatusCallback = object : GnssStatus.Callback() {
         override fun onSatelliteStatusChanged(status: GnssStatus) {
-            satelliteCount = status.satelliteCount
+            var usedCount = 0
+            for (i in 0 until status.satelliteCount) {
+                if (status.usedInFix(i)) usedCount++
+            }
+            satelliteCount = usedCount
         }
     }
 
@@ -133,18 +139,19 @@ class GpsTrackingService : Service() {
 
         val intervalMs = intent?.getLongExtra(EXTRA_INTERVAL_MS, 2000L) ?: 2000L
 
-        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMs)
-            .setMinUpdateIntervalMillis(intervalMs / 2)
-            .build()
-
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback,
+        locationManager.requestLocationUpdates(
+            LocationManager.GPS_PROVIDER,
+            intervalMs,
+            0f,
+            gpsLocationListener,
             Looper.getMainLooper()
         )
 
         try {
-            locationManager.registerGnssStatusCallback(gnssStatusCallback, android.os.Handler(Looper.getMainLooper()))
+            locationManager.registerGnssStatusCallback(
+                gnssStatusCallback,
+                android.os.Handler(Looper.getMainLooper())
+            )
         } catch (e: Exception) {
             Log.w(TAG, "Could not register GNSS status callback", e)
         }
@@ -154,7 +161,7 @@ class GpsTrackingService : Service() {
 
     override fun onDestroy() {
         _isTracking.value = false
-        fusedLocationClient.removeLocationUpdates(locationCallback)
+        locationManager.removeUpdates(gpsLocationListener)
         try {
             locationManager.unregisterGnssStatusCallback(gnssStatusCallback)
         } catch (_: Exception) {}
