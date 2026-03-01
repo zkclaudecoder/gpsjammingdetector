@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.gpsjammingdetector.data.preferences.UserPreferences
 import com.gpsjammingdetector.data.repository.GpsRepository
 import com.gpsjammingdetector.domain.model.DetectionConfig
+import com.gpsjammingdetector.util.AlertSoundPlayer
 import com.gpsjammingdetector.util.CsvExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,9 @@ class SettingsViewModel @Inject constructor(
 
     val config: StateFlow<DetectionConfig> = userPreferences.detectionConfig
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DetectionConfig())
+
+    val audioAlertEnabled: StateFlow<Boolean> = userPreferences.audioAlertEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private val _exportStatus = MutableStateFlow<String?>(null)
     val exportStatus: StateFlow<String?> = _exportStatus.asStateFlow()
@@ -87,6 +91,16 @@ class SettingsViewModel @Inject constructor(
             repository.clearAllData()
             _exportStatus.value = "All data cleared"
         }
+    }
+
+    fun setAudioAlertEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferences.setAudioAlertEnabled(enabled)
+        }
+    }
+
+    fun testAlertSound() {
+        AlertSoundPlayer.play(application)
     }
 
     fun dismissStatus() {

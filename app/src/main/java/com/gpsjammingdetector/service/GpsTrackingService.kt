@@ -17,8 +17,10 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.Priority
+import com.gpsjammingdetector.data.preferences.UserPreferences
 import com.gpsjammingdetector.data.repository.GpsRepository
 import com.gpsjammingdetector.domain.model.GpsReading
+import com.gpsjammingdetector.util.AlertSoundPlayer
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +39,7 @@ class GpsTrackingService : Service() {
     @Inject lateinit var fusedLocationClient: FusedLocationProviderClient
     @Inject lateinit var locationManager: LocationManager
     @Inject lateinit var repository: GpsRepository
+    @Inject lateinit var userPreferences: UserPreferences
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var sessionId = ""
@@ -68,6 +71,17 @@ class GpsTrackingService : Service() {
                         anomalyCount += anomalies.size
                         _currentSatelliteCount.value = satelliteCount
                         _currentAccuracy.value = location.accuracy
+                        _lastLatitude.value = location.latitude
+                        _lastLongitude.value = location.longitude
+
+                        if (anomalies.isNotEmpty()) {
+                            userPreferences.audioAlertEnabled.collect { enabled ->
+                                if (enabled) {
+                                    AlertSoundPlayer.play(this@GpsTrackingService)
+                                }
+                                return@collect
+                            }
+                        }
 
                         updateNotification()
                     } catch (e: Exception) {
@@ -171,6 +185,12 @@ class GpsTrackingService : Service() {
 
         private val _currentAccuracy = MutableStateFlow(0f)
         val currentAccuracy: StateFlow<Float> = _currentAccuracy.asStateFlow()
+
+        private val _lastLatitude = MutableStateFlow(0.0)
+        val lastLatitude: StateFlow<Double> = _lastLatitude.asStateFlow()
+
+        private val _lastLongitude = MutableStateFlow(0.0)
+        val lastLongitude: StateFlow<Double> = _lastLongitude.asStateFlow()
 
         fun start(context: Context, intervalMs: Long = 2000L) {
             val intent = Intent(context, GpsTrackingService::class.java).apply {
