@@ -18,12 +18,18 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,11 +41,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gpsjammingdetector.ui.theme.SeverityCritical
+import com.gpsjammingdetector.util.AlertSound
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val config by viewModel.config.collectAsStateWithLifecycle()
     val audioAlertEnabled by viewModel.audioAlertEnabled.collectAsStateWithLifecycle()
+    val alertSound by viewModel.alertSound.collectAsStateWithLifecycle()
     val exportStatus by viewModel.exportStatus.collectAsStateWithLifecycle()
     var showClearDialog by remember { mutableStateOf(false) }
 
@@ -84,6 +93,41 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         onCheckedChange = { viewModel.setAudioAlertEnabled(it) }
                     )
                 }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Sound picker
+                var soundExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = soundExpanded,
+                    onExpandedChange = { soundExpanded = !soundExpanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TextField(
+                        value = alertSound.displayName,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Alert Sound") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = soundExpanded) },
+                        modifier = Modifier
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = soundExpanded,
+                        onDismissRequest = { soundExpanded = false }
+                    ) {
+                        AlertSound.entries.forEach { sound ->
+                            DropdownMenuItem(
+                                text = { Text(sound.displayName) },
+                                onClick = {
+                                    viewModel.setAlertSound(sound)
+                                    soundExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),

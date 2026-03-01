@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.gpsjammingdetector.util.AlertSound
 import androidx.datastore.preferences.preferencesDataStore
 import com.gpsjammingdetector.domain.model.DetectionConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,14 +28,26 @@ class UserPreferences @Inject constructor(
     private val altitudeSpikeKey = doublePreferencesKey("altitude_spike_m")
     private val gpsIntervalKey = longPreferencesKey("gps_interval_ms")
     private val audioAlertKey = booleanPreferencesKey("audio_alert_enabled")
+    private val alertSoundKey = stringPreferencesKey("alert_sound")
 
     val audioAlertEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[audioAlertKey] ?: false
     }
 
+    val alertSound: Flow<AlertSound> = context.dataStore.data.map { prefs ->
+        val name = prefs[alertSoundKey] ?: AlertSound.ALARM.name
+        try { AlertSound.valueOf(name) } catch (_: Exception) { AlertSound.ALARM }
+    }
+
     suspend fun setAudioAlertEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[audioAlertKey] = enabled
+        }
+    }
+
+    suspend fun setAlertSound(sound: AlertSound) {
+        context.dataStore.edit { prefs ->
+            prefs[alertSoundKey] = sound.name
         }
     }
 
