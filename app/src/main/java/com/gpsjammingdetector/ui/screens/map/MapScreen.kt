@@ -117,8 +117,9 @@ fun MapScreen(viewModel: MapViewModel = hiltViewModel()) {
         mapView.invalidate()
     }
 
-    // Auto-follow camera
-    LaunchedEffect(readings, autoFollow) {
+    // Auto-follow camera — only move when a *new* reading arrives and auto-follow is on
+    val readingCount = readings.size
+    LaunchedEffect(readingCount) {
         if (autoFollow && readings.isNotEmpty()) {
             val sortedReadings = readings.sortedBy { it.timestamp }
             val last = sortedReadings.last()

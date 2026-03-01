@@ -42,7 +42,7 @@ class MapViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val autoFollow = MutableStateFlow(true)
+    val autoFollow = MutableStateFlow(false)
 
     init {
         // Default to current session if tracking
