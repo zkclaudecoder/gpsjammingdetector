@@ -3,6 +3,7 @@ package com.gpsjammingdetector.data.preferences
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -24,6 +25,17 @@ class UserPreferences @Inject constructor(
     private val teleportationDistanceKey = doublePreferencesKey("teleportation_distance_m")
     private val altitudeSpikeKey = doublePreferencesKey("altitude_spike_m")
     private val gpsIntervalKey = longPreferencesKey("gps_interval_ms")
+    private val audioAlertKey = booleanPreferencesKey("audio_alert_enabled")
+
+    val audioAlertEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[audioAlertKey] ?: false
+    }
+
+    suspend fun setAudioAlertEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[audioAlertKey] = enabled
+        }
+    }
 
     val detectionConfig: Flow<DetectionConfig> = context.dataStore.data.map { prefs ->
         DetectionConfig(

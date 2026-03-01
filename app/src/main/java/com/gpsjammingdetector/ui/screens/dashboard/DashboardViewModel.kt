@@ -28,6 +28,8 @@ class DashboardViewModel @Inject constructor(
     val currentSessionId: StateFlow<String> = GpsTrackingService.currentSessionId
     val satelliteCount: StateFlow<Int> = GpsTrackingService.currentSatelliteCount
     val currentAccuracy: StateFlow<Float> = GpsTrackingService.currentAccuracy
+    val lastLatitude: StateFlow<Double> = GpsTrackingService.lastLatitude
+    val lastLongitude: StateFlow<Double> = GpsTrackingService.lastLongitude
 
     val totalReadingCount = repository.getReadingCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)

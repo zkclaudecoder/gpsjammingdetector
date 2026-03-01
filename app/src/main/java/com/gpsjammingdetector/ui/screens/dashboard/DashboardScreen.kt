@@ -1,8 +1,12 @@
 package com.gpsjammingdetector.ui.screens.dashboard
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +21,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Satellite
 import androidx.compose.material.icons.filled.Speed
@@ -28,6 +34,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,6 +66,8 @@ fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
     val totalAnomalies by viewModel.totalAnomalyCount.collectAsStateWithLifecycle()
     val sessionReadings by viewModel.sessionReadingCount.collectAsStateWithLifecycle()
     val sessionAnomalies by viewModel.sessionAnomalyCount.collectAsStateWithLifecycle()
+    val lastLat by viewModel.lastLatitude.collectAsStateWithLifecycle()
+    val lastLon by viewModel.lastLongitude.collectAsStateWithLifecycle()
 
     var hasLocationPermission by remember {
         mutableStateOf(
@@ -188,6 +197,51 @@ fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
                         label = "Accuracy",
                         value = if (currentAccuracy > 0) "%.1fm".format(currentAccuracy) else "--"
                     )
+                }
+
+                // Last Coordinates
+                if (lastLat != 0.0 || lastLon != 0.0) {
+                    val coordText = "%.6f, %.6f".format(lastLat, lastLon)
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.MyLocation,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 12.dp)
+                            ) {
+                                Text(
+                                    "Last Position",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    coordText,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            IconButton(onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                clipboard.setPrimaryClip(ClipData.newPlainText("coordinates", coordText))
+                                Toast.makeText(context, "Coordinates copied", Toast.LENGTH_SHORT).show()
+                            }) {
+                                Icon(
+                                    Icons.Default.ContentCopy,
+                                    contentDescription = "Copy coordinates"
+                                )
+                            }
+                        }
+                    }
                 }
             }
 

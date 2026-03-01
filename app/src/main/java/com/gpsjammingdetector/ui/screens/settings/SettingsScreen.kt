@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Snackbar
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,6 +39,7 @@ import com.gpsjammingdetector.ui.theme.SeverityCritical
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val config by viewModel.config.collectAsStateWithLifecycle()
+    val audioAlertEnabled by viewModel.audioAlertEnabled.collectAsStateWithLifecycle()
     val exportStatus by viewModel.exportStatus.collectAsStateWithLifecycle()
     var showClearDialog by remember { mutableStateOf(false) }
 
@@ -61,6 +63,36 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
+
+        // Audio Alert
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    "Audio Alert",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Play sound on anomaly detection")
+                    Switch(
+                        checked = audioAlertEnabled,
+                        onCheckedChange = { viewModel.setAudioAlertEnabled(it) }
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { viewModel.testAlertSound() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Test Alert Sound")
+                }
+            }
+        }
 
         // Detection Thresholds
         Card(modifier = Modifier.fillMaxWidth()) {
