@@ -79,16 +79,11 @@ dependencies {
     ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.navigation.compose)
 
-    // Google Play Services
-    implementation(libs.play.services.location)
-
     // OpenStreetMap
     implementation(libs.osmdroid)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.kotlinx.coroutines.play.services)
-
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
