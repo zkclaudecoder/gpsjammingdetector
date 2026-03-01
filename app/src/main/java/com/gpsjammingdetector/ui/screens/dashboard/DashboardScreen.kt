@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Satellite
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -54,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gpsjammingdetector.ui.components.PermissionHandler
 import com.gpsjammingdetector.ui.theme.AllClear
 import com.gpsjammingdetector.ui.theme.SeverityCritical
+import com.gpsjammingdetector.util.AlertSoundPlayer
 
 @Composable
 fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
@@ -137,26 +139,45 @@ fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
             Spacer(modifier = Modifier.height(4.dp))
 
             // Start/Stop Button
-            Button(
-                onClick = {
-                    if (isTracking) viewModel.stopTracking() else viewModel.startTracking()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isTracking) SeverityCritical else AllClear
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    imageVector = if (isTracking) Icons.Default.Stop else Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-                Text(
-                    text = if (isTracking) "  Stop Tracking" else "  Start Tracking",
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Button(
+                    onClick = {
+                        if (isTracking) viewModel.stopTracking() else viewModel.startTracking()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isTracking) SeverityCritical else AllClear
+                    )
+                ) {
+                    Icon(
+                        imageVector = if (isTracking) Icons.Default.Stop else Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = if (isTracking) "  Stop Tracking" else "  Start Tracking",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+                Button(
+                    onClick = { AlertSoundPlayer.stop() },
+                    modifier = Modifier.height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.VolumeOff,
+                        contentDescription = "Stop alert sound",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(4.dp))

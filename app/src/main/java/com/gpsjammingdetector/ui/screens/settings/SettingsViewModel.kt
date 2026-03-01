@@ -103,6 +103,10 @@ class SettingsViewModel @Inject constructor(
         AlertSoundPlayer.play(application)
     }
 
+    fun stopAlertSound() {
+        AlertSoundPlayer.stop()
+    }
+
     fun dismissStatus() {
         _exportStatus.value = null
     }

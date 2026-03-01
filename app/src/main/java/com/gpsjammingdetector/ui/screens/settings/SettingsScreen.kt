@@ -85,11 +85,22 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = { viewModel.testAlertSound() },
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Test Alert Sound")
+                    OutlinedButton(
+                        onClick = { viewModel.testAlertSound() },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Test Sound")
+                    }
+                    OutlinedButton(
+                        onClick = { viewModel.stopAlertSound() },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Stop Sound")
+                    }
                 }
             }
         }
