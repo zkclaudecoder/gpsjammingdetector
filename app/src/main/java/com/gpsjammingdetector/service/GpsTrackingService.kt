@@ -77,7 +77,10 @@ class GpsTrackingService : Service() {
                         if (anomalies.isNotEmpty()) {
                             userPreferences.audioAlertEnabled.collect { enabled ->
                                 if (enabled) {
-                                    AlertSoundPlayer.play(this@GpsTrackingService)
+                                    userPreferences.alertSound.collect { sound ->
+                                        AlertSoundPlayer.play(this@GpsTrackingService, sound)
+                                        return@collect
+                                    }
                                 }
                                 return@collect
                             }
